@@ -14,19 +14,6 @@ body {
     height: 100vh;
 }
 
-/* Boîte des coordonnées */
-#coordsBox {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: white;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.3);
-    font-size: 14px;
-    z-index: 1000;
-}
-
 /* Panneau de filtres */
 #filterBox {
     position: absolute;
@@ -69,14 +56,50 @@ body {
     font-weight: 600;
     letter-spacing: 0.03em;
 }
+
+/* Fenêtre coordonnées */
+#coordModal {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 16px rgba(0,0,0,0.4);
+    z-index: 2000;
+    font-size: 14px;
+    min-width: 220px;
+}
+#coordModal h4 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: #444;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 6px;
+}
+#coordModal p {
+    margin: 4px 0;
+    color: #222;
+}
+#coordModal button {
+    margin-top: 12px;
+    width: 100%;
+    padding: 6px;
+    background: #3a7bd5;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+}
+#coordModal button:hover {
+    background: #2f63b0;
+}
 </style>
 </head>
 <body>
-
-<div id="coordsBox">
-    Latitude : <span id="lat">--</span><br>
-    Longitude : <span id="lng">--</span>
-</div>
 
 <div id="filterBox">
     <h4>Filtres</h4>
@@ -102,6 +125,14 @@ body {
     </div>
 </div>
 
+<!-- Fenêtre coordonnées -->
+<div id="coordModal">
+    <h4>📍 Coordonnées du clic</h4>
+    <p>Latitude : <strong id="modalLat">--</strong></p>
+    <p>Longitude : <strong id="modalLng">--</strong></p>
+    <button onclick="document.getElementById('coordModal').style.display='none'">Fermer</button>
+</div>
+
 <div id="map"></div>
 
 <script>
@@ -111,20 +142,27 @@ var limitesAisne = L.latLngBounds(
     [50.2, 4.3]
 );
 
-// --- Carte centrée sur l'Aisne ---
+// --- Carte ---
 var map = L.map('map', {
     maxBounds: limitesAisne,
-    maxBoundsViscosity: 1.0
+    maxBoundsViscosity: 1.0,
+    doubleClickZoom: false
 }).setView([49.5, 3.5], 9);
 
 map.setMinZoom(8);
 
-// --- Fond de carte ---
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// --- Icône verte ---
+// --- Double clic → affiche coordonnées ---
+map.on('dblclick', function(e) {
+    document.getElementById('modalLat').textContent = e.latlng.lat.toFixed(5);
+    document.getElementById('modalLng').textContent = e.latlng.lng.toFixed(5);
+    document.getElementById('coordModal').style.display = 'block';
+});
+
+// --- Icônes ---
 var greenIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -134,7 +172,6 @@ var greenIcon = new L.Icon({
     shadowSize: [41, 41]
 });
 
-// --- Icône bleue ---
 var blueIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -175,7 +212,7 @@ var lieux = [
     }
 ];
 
-// --- Création des marqueurs ---
+// --- Marqueurs ---
 var markers = [];
 
 lieux.forEach(function(lieu) {
@@ -199,14 +236,10 @@ function applyFilters() {
 
     markers.forEach(function(obj) {
         var roles = obj.lieu.roles;
-
-        // Pas de rôle = toujours visible (ex: Cathédrale, Lycée)
         if (roles.length === 0) {
             obj.marker.addTo(map);
             return;
         }
-
-        // Visible si au moins un rôle coché correspond
         var visible = roles.some(function(r) { return actifs.includes(r); });
         if (visible) {
             obj.marker.addTo(map);
@@ -216,15 +249,8 @@ function applyFilters() {
     });
 }
 
-// --- Écoute des cases à cocher ---
 ["MRC", "VAL", "MA", "ANIM", "MCV"].forEach(function(role) {
     document.getElementById("f-" + role).addEventListener("change", applyFilters);
-});
-
-// --- Coordonnées en temps réel ---
-map.on('mousemove', function(e) {
-    document.getElementById('lat').textContent = e.latlng.lat.toFixed(5);
-    document.getElementById('lng').textContent = e.latlng.lng.toFixed(5);
 });
 </script>
 </body>
