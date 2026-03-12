@@ -1,423 +1,113 @@
-<!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
 <meta charset="utf-8">
-<title>Carte des Stages – Laon & Aisne</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Carte Aisne</title>
+<link <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  :root {
-    --navy: #1a2340;
-    --navy-light: #243050;
-    --gold: #e8c56a;
-    --gold-dark: #c9a84c;
-    --cream: #f7f3ec;
-    --red: #d64e3b;
-    --teal: #3ab5a0;
-    --blue: #4a80c4;
-    --panel: 320px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--navy);
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  /* ── PANNEAU LATÉRAL ── */
-  #panel {
-    width: var(--panel);
-    min-width: var(--panel);
-    background: var(--navy);
-    color: var(--cream);
-    display: flex;
-    flex-direction: column;
+body{
+    font-family: Arial;
+    margin:0;
+}
+#map{
+    height:100vh;
+}
+/* Style de la légende */
+.legend {
+    background: white;
+    padding: 10px;
+    line-height: 18px;
+    color: #333;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.9;
+}
+/* Boîte des coordonnées */
+#coordsBox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    font-size: 14px;
     z-index: 1000;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
-  }
-
-  #panel-header {
-    padding: 22px 20px 16px;
-    background: var(--navy-light);
-    border-bottom: 2px solid var(--gold);
-  }
-
-  #panel-header h1 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.35rem;
-    color: var(--gold);
-    letter-spacing: 0.01em;
-    line-height: 1.25;
-  }
-
-  #panel-header p {
-    font-size: 0.78rem;
-    color: #9aa8c0;
-    margin-top: 4px;
-  }
-
-  /* Recherche */
-  #search-wrap {
-    padding: 14px 16px 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-
-  #search {
-    width: 100%;
-    padding: 8px 12px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 8px;
-    color: var(--cream);
-    font-size: 0.85rem;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border 0.2s;
-  }
-  #search::placeholder { color: #6b7a94; }
-  #search:focus { border-color: var(--gold); }
-
-  /* Filtres */
-  #filters {
-    padding: 10px 16px 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-
-  .filter-btn {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1.5px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .filter-btn.active { color: var(--navy); }
-  .filter-btn:not(.active) { background: transparent; color: #9aa8c0; border-color: rgba(255,255,255,0.15); }
-  .filter-btn:not(.active):hover { border-color: #9aa8c0; color: var(--cream); }
-
-  /* Liste */
-  #stage-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px 12px;
-    scrollbar-width: thin;
-    scrollbar-color: #3a4a6a transparent;
-  }
-
-  .stage-card {
-    padding: 11px 14px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: all 0.2s;
-    background: rgba(255,255,255,0.04);
-  }
-  .stage-card:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.12); }
-  .stage-card.active { background: rgba(232,197,106,0.12); border-color: var(--gold); }
-
-  .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-
-  .cat-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .card-name {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--cream);
-    line-height: 1.3;
-  }
-
-  .card-meta {
-    font-size: 0.74rem;
-    color: #8494ae;
-    padding-left: 18px;
-  }
-
-  /* Compteur */
-  #count-bar {
-    padding: 8px 16px;
-    font-size: 0.74rem;
-    color: #6b7a94;
-    border-top: 1px solid rgba(255,255,255,0.07);
-    text-align: center;
-  }
-
-  /* ── CARTE ── */
-  #map-wrap {
-    flex: 1;
-    position: relative;
-  }
-
-  #map { width: 100%; height: 100%; }
-
-  /* Coords */
-  #coordsBox {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    background: rgba(26,35,64,0.9);
-    color: #9aa8c0;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    z-index: 500;
-    border: 1px solid rgba(255,255,255,0.1);
-    backdrop-filter: blur(4px);
-    pointer-events: none;
-  }
-
-  /* Popup custom */
-  .leaflet-popup-content-wrapper {
-    background: var(--navy-light);
-    color: var(--cream);
-    border-radius: 10px;
-    border: 1px solid rgba(232,197,106,0.4);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-  .leaflet-popup-tip { background: var(--navy-light); }
-  .leaflet-popup-content { margin: 12px 16px; min-width: 180px; }
-
-  .popup-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1rem;
-    color: var(--gold);
-    margin-bottom: 4px;
-  }
-  .popup-cat {
-    display: inline-block;
-    font-size: 0.68rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 2px 8px;
-    border-radius: 20px;
-    margin-bottom: 6px;
-  }
-  .popup-info { font-size: 0.8rem; color: #9aa8c0; line-height: 1.6; }
-
-  /* Légende flottante */
-  #legend-box {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    background: rgba(26,35,64,0.92);
-    border: 1px solid rgba(232,197,106,0.3);
-    border-radius: 10px;
-    padding: 12px 16px;
-    z-index: 500;
-    backdrop-filter: blur(6px);
-    min-width: 160px;
-  }
-  #legend-box h4 {
-    font-family: 'DM Serif Display', serif;
-    color: var(--gold);
-    font-size: 0.82rem;
-    margin-bottom: 8px;
-    letter-spacing: 0.02em;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.75rem;
-    color: #9aa8c0;
-    margin-bottom: 5px;
-    cursor: pointer;
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: background 0.15s;
-  }
-  .legend-item:hover { background: rgba(255,255,255,0.06); color: var(--cream); }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+}
 </style>
 </head>
 <body>
-
-<!-- Panneau latéral -->
-<div id="panel">
-  <div id="panel-header">
-    <h1>📍 Stages autour de Laon</h1>
-    <p>Aisne (02) · Carte interactive</p>
-  </div>
-
-  <div id="search-wrap">
-    <input type="text" id="search" placeholder="🔍  Rechercher un lieu…">
-  </div>
-
-  <div id="filters">
-    <button class="filter-btn active" data-cat="tous" style="background:#4a5568;border-color:#4a5568;">Tous</button>
-    <button class="filter-btn" data-cat="Santé" style="--c:#d64e3b">Santé</button>
-    <button class="filter-btn" data-cat="Éducation" style="--c:#3ab5a0">Éducation</button>
-    <button class="filter-btn" data-cat="Entreprise" style="--c:#4a80c4">Entreprise</button>
-    <button class="filter-btn" data-cat="Administration" style="--c:#9b6dd6">Administration</button>
-    <button class="filter-btn" data-cat="Commerce" style="--c:#e07b3a">Commerce</button>
-  </div>
-
-  <div id="stage-list"></div>
-  <div id="count-bar">— lieux affichés —</div>
+<!-- Boîte affichant les coordonnées -->
+<div id="coordsBox">
+    Latitude : <span id="lat">--</span><br>
+    Longitude : <span id="lng">--</span>
 </div>
-
 <!-- Carte -->
-<div id="map-wrap">
-  <div id="map"></div>
-
-  <div id="coordsBox">
-    🖱 Lat : <span id="lat">--</span> &nbsp;|&nbsp; Lng : <span id="lng">--</span>
-  </div>
-
-  <div id="legend-box">
-    <h4>Catégories</h4>
-    <div class="legend-item"><div class="legend-dot" style="background:#d64e3b"></div> Santé</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#3ab5a0"></div> Éducation</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4a80c4"></div> Entreprise</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#9b6dd6"></div> Administration</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#e07b3a"></div> Commerce</div>
-  </div>
-</div>
-
+<div id="map"></div>
+<script src="leaflet/leaflet.js"></script>
 <script>
-// ── DONNÉES ──────────────────────────────────────────────
-const stages = [
-  // Éducation
-  { nom: "Lycée Julie-Daubié", adresse: "Laon (02000)", cat: "Éducation", lat: 49.56040, lng: 3.61136, desc: "Lycée technologique et général" },
-  { nom: "Collège Paul Claudel", adresse: "Laon (02000)", cat: "Éducation", lat: 49.5645, lng: 3.6180, desc: "Collège public de Laon" },
-  { nom: "Lycée Henri-Martin", adresse: "Saint-Quentin (02100)", cat: "Éducation", lat: 49.8490, lng: 3.2870, desc: "Lycée général et technologique" },
-  { nom: "IUT de l'Aisne", adresse: "Saint-Quentin (02100)", cat: "Éducation", lat: 49.8440, lng: 3.2940, desc: "Institut Universitaire de Technologie" },
-
-  // Santé
-  { nom: "CH Laon – Hôpital", adresse: "Laon (02000)", cat: "Santé", lat: 49.5595, lng: 3.6235, desc: "Centre hospitalier de Laon" },
-  { nom: "EHPAD Les Lilas", adresse: "Laon (02000)", cat: "Santé", lat: 49.5710, lng: 3.6150, desc: "Maison de retraite médicalisée" },
-  { nom: "Clinique Saint-Claude", adresse: "Saint-Quentin (02100)", cat: "Santé", lat: 49.8460, lng: 3.2820, desc: "Clinique privée – soins multiples" },
-  { nom: "SSIAD Aisne Nord", adresse: "Vervins (02140)", cat: "Santé", lat: 49.8344, lng: 3.9080, desc: "Service soins infirmiers à domicile" },
-
-  // Entreprise
-  { nom: "Faurecia – Usine", adresse: "Méru / Soissons (02200)", cat: "Entreprise", lat: 49.3805, lng: 3.3230, desc: "Équipementier automobile" },
-  { nom: "Bonduelle Usine", adresse: "Russy-Bémont (02)", cat: "Entreprise", lat: 49.4160, lng: 3.1700, desc: "Industrie agroalimentaire" },
-  { nom: "CETIH / Menuiseries", adresse: "Ribemont (02240)", cat: "Entreprise", lat: 49.7900, lng: 3.4600, desc: "Fabrication menuiseries industrielles" },
-  { nom: "SMURFIT – Emballage", adresse: "Chauny (02300)", cat: "Entreprise", lat: 49.6170, lng: 3.2170, desc: "Industrie de l'emballage carton" },
-
-  // Administration
-  { nom: "Préfecture de l'Aisne", adresse: "Laon (02000)", cat: "Administration", lat: 49.5650, lng: 3.6240, desc: "Services préfectoraux département 02" },
-  { nom: "Mairie de Laon", adresse: "Laon (02000)", cat: "Administration", lat: 49.5639, lng: 3.6225, desc: "Services municipaux" },
-  { nom: "Conseil Départemental 02", adresse: "Laon (02000)", cat: "Administration", lat: 49.5670, lng: 3.6190, desc: "Hôtel du département" },
-  { nom: "CAF de l'Aisne", adresse: "Laon (02000)", cat: "Administration", lat: 49.5620, lng: 3.6200, desc: "Caisse d'allocations familiales" },
-
-  // Commerce
-  { nom: "E.Leclerc Laon", adresse: "Laon (02000)", cat: "Commerce", lat: 49.5500, lng: 3.6050, desc: "Grande surface – logistique & vente" },
-  { nom: "Carrefour Soissons", adresse: "Soissons (02200)", cat: "Commerce", lat: 49.3760, lng: 3.3110, desc: "Hypermarché" },
-  { nom: "Intermarché Vervins", adresse: "Vervins (02140)", cat: "Commerce", lat: 49.8380, lng: 3.9120, desc: "Supermarché – gestion de rayon" },
-  { nom: "Centre Commercial Laon 2", adresse: "Laon (02000)", cat: "Commerce", lat: 49.5540, lng: 3.6000, desc: "Centre commercial – stages vente" },
-];
-
-// ── COULEURS ──────────────────────────────────────────────
-const CAT_COLORS = {
-  "Santé":          "#d64e3b",
-  "Éducation":      "#3ab5a0",
-  "Entreprise":     "#4a80c4",
-  "Administration": "#9b6dd6",
-  "Commerce":       "#e07b3a",
-};
-
-function catColor(cat) { return CAT_COLORS[cat] || "#aaa"; }
-
-// ── CARTE ──────────────────────────────────────────────────
-var limitesAisne = L.latLngBounds([49.1, 2.9], [50.2, 4.3]);
-
+// --- Limites de l'Aisne (empêche de sortir) ---
+var limitesAisne = L.latLngBounds(
+    [49.1, 2.9],   // Sud-Ouest
+    [50.2, 4.3]    // Nord-Est
+);
+// --- Carte centrée sur l'Aisne ---
 var map = L.map('map', {
-  maxBounds: limitesAisne,
-  maxBoundsViscosity: 0.8,
-  zoomControl: true
-}).setView([49.56, 3.62], 9);
-
+    maxBounds: limitesAisne,
+    maxBoundsViscosity: 1.0
+}).setView([49.5, 3.5], 9);
 map.setMinZoom(8);
-
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© OpenStreetMap © CARTO',
-  subdomains: 'abcd',
-  maxZoom: 19
+// --- Fond de carte ---
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© OpenStreetMap'
 }).addTo(map);
-
-// Coordonnées souris
+// --- Icône verte personnalisée ---
+var greenIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+    shadowUrl: 'leaflet/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+// --- Icône bleue personnalisée ---
+var blueIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+    shadowUrl: 'leaflet/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+// --- Cathédrale de Laon ---
+L.marker([49.5638, 3.6217], {icon: blueIcon})
+.addTo(map)
+.bindPopup("<b>Cathédrale de Laon</b><br>02000 Laon");
+// --- Lycée Julie-Daubié ---
+L.marker([49.56040, 3.61136], {icon: greenIcon})
+.addTo(map)
+.bindPopup("<b>Lycée Julie-Daubié</b><br>02000 Laon<br>Lycée technologique.");
+// --- Légende ---
+var legend = L.control({position: 'bottomright'});
+legend.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'legend');
+    div.innerHTML += "<h4>Légende</h4>";
+    div.innerHTML += '<i style="background:blue"></i><span>Cathédrale de Laon</span><br>';
+    div.innerHTML += '<i style="background:green"></i><span>Lycée Julie-Daubié</span><br>';
+    return div;
+};
+legend.addTo(map);
+// --- Affichage des coordonnées en temps réel ---
 map.on('mousemove', function(e) {
-  document.getElementById('lat').textContent = e.latlng.lat.toFixed(5);
-  document.getElementById('lng').textContent = e.latlng.lng.toFixed(5);
+    document.getElementById('lat').textContent = e.latlng.lat.toFixed(5);
+    document.getElementById('lng').textContent = e.latlng.lng.toFixed(5);
 });
-
-// ── MARQUEURS ─────────────────────────────────────────────
-function makeIcon(color) {
-  return L.divIcon({
-    className: '',
-    html: `<svg width="28" height="40" viewBox="0 0 28 40" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26S28 24.5 28 14C28 6.27 21.73 0 14 0z"
-            fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1.5"/>
-      <circle cx="14" cy="14" r="5.5" fill="white" opacity="0.9"/>
-    </svg>`,
-    iconSize: [28, 40],
-    iconAnchor: [14, 40],
-    popupAnchor: [0, -42],
-  });
-}
-
-let markers = [];
-let activeIndex = null;
-
-stages.forEach((s, i) => {
-  const color = catColor(s.cat);
-  const marker = L.marker([s.lat, s.lng], { icon: makeIcon(color) });
-
-  const popupHtml = `
-    <div class="popup-title">${s.nom}</div>
-    <span class="popup-cat" style="background:${color}22;color:${color};border:1px solid ${color}55">${s.cat}</span>
-    <div class="popup-info">
-      📍 ${s.adresse}<br>
-      📝 ${s.desc}
-    </div>`;
-
-  marker.bindPopup(popupHtml, { maxWidth: 260 });
-  marker.on('click', () => activateCard(i));
-  marker.addTo(map);
-  markers.push({ marker, data: s, visible: true });
-});
-
-// ── LISTE LATÉRALE ────────────────────────────────────────
-let currentFilter = "tous";
-let currentSearch = "";
-
-function activateCard(i) {
-  activeIndex = i;
-  renderList();
-  const el = document.querySelector(`.stage-card[data-i="${i}"]`);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  map.setView([stages[i].lat, stages[i].lng], 13, { animate: true });
-  markers[i].marker.openPopup();
-}
-
-function renderList() {
-  const list = document.getElementById('stage-list');
-  list.innerHTML = '';
-  let count = 0;
-
-  stages.forEach((s, i) => {
-    const matchCat = currentFilter === "tous" || s.cat === currentFilter;
-    const matchSearch = s.nom.toLowerCase().includes(currentSearch) || s.adresse.toLowerCase().includes(currentSearch);
-    const show = matchCat && matchSearch;
-
-    if (show) {
-      if (!markers[i].visible) { markers[i].marker.addT
+</script>
+</body>
+</html>
