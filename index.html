@@ -146,7 +146,8 @@ var limitesAisne = L.latLngBounds(
 var map = L.map('map', {
     maxBounds: limitesAisne,
     maxBoundsViscosity: 1.0,
-    doubleClickZoom: false
+    doubleClickZoom: false,
+    zoomAnimation: false
 }).setView([49.5, 3.5], 9);
 
 map.setMinZoom(8);
@@ -157,6 +158,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // --- Double clic → affiche coordonnées ---
 map.on('dblclick', function(e) {
+    L.DomEvent.stopPropagation(e);
+    L.DomEvent.preventDefault(e);
     document.getElementById('modalLat').textContent = e.latlng.lat.toFixed(5);
     document.getElementById('modalLng').textContent = e.latlng.lng.toFixed(5);
     document.getElementById('coordModal').style.display = 'block';
