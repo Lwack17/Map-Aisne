@@ -60,7 +60,7 @@ body {
 /* Fenêtre coordonnées */
 #coordModal {
     display: none;
-    position: fixed;
+    position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -146,8 +146,7 @@ var limitesAisne = L.latLngBounds(
 var map = L.map('map', {
     maxBounds: limitesAisne,
     maxBoundsViscosity: 1.0,
-    doubleClickZoom: false,
-    zoomAnimation: false
+    doubleClickZoom: false
 }).setView([49.5, 3.5], 9);
 
 map.setMinZoom(8);
@@ -158,8 +157,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // --- Double clic → affiche coordonnées ---
 map.on('dblclick', function(e) {
-    L.DomEvent.stopPropagation(e);
-    L.DomEvent.preventDefault(e);
     document.getElementById('modalLat').textContent = e.latlng.lat.toFixed(5);
     document.getElementById('modalLng').textContent = e.latlng.lng.toFixed(5);
     document.getElementById('coordModal').style.display = 'block';
@@ -209,8 +206,8 @@ var lieux = [
         adresse: "Laon (02000)",
         desc: "Commerce agroalimentaire.",
         roles: ["ANIM", "MCV"],
-        lat: 49.5572,
-        lng: 3.6050,
+        lat: 49.54768,
+        lng: 3.61431,
         icon: greenIcon
     }
 ];
