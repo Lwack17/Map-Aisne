@@ -230,7 +230,7 @@ lieux.forEach(function(lieu) {
 // --- Filtrage ---
 function applyFilters() {
     var actifs = [];
-    ["MRC", "VAL", "MA", "ANIM", "MCV"].forEach(function(role) {
+    ["MRC", "VAL", "MA", "ANIM"].forEach(function(role) {
         if (document.getElementById("f-" + role).checked) actifs.push(role);
     });
 
@@ -249,7 +249,7 @@ function applyFilters() {
     });
 }
 
-["MRC", "VAL", "MA", "ANIM", "MCV"].forEach(function(role) {
+["MRC", "VAL", "MA", "ANIM"].forEach(function(role) {
     document.getElementById("f-" + role).addEventListener("change", applyFilters);
 });
 </script>
