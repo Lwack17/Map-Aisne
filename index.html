@@ -60,7 +60,7 @@ body {
 /* Fenêtre coordonnées */
 #coordModal {
     display: none;
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -119,7 +119,10 @@ body {
         <input type="checkbox" id="f-ANIM" checked>
         <label for="f-ANIM">ANIM</label>
     </div>
-    
+    <div class="filter-row">
+        <input type="checkbox" id="f-MCV" checked>
+        <label for="f-MCV">MCV</label>
+    </div>
 </div>
 
 <!-- Fenêtre coordonnées -->
@@ -143,7 +146,8 @@ var limitesAisne = L.latLngBounds(
 var map = L.map('map', {
     maxBounds: limitesAisne,
     maxBoundsViscosity: 1.0,
-    doubleClickZoom: false
+    doubleClickZoom: false,
+    zoomAnimation: false
 }).setView([49.5, 3.5], 9);
 
 map.setMinZoom(8);
@@ -154,6 +158,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // --- Double clic → affiche coordonnées ---
 map.on('dblclick', function(e) {
+    L.DomEvent.stopPropagation(e);
+    L.DomEvent.preventDefault(e);
     document.getElementById('modalLat').textContent = e.latlng.lat.toFixed(5);
     document.getElementById('modalLng').textContent = e.latlng.lng.toFixed(5);
     document.getElementById('coordModal').style.display = 'block';
@@ -202,18 +208,9 @@ var lieux = [
         nom: "Carrefour Brossolette",
         adresse: "Laon (02000)",
         desc: "Commerce agroalimentaire.",
-        roles: ["ANIM", "MRC"],
-        lat: 49.54768,
-        lng: 3.61431,
-        icon: greenIcon
-    },
-    {
-        nom: "Centre de Tourisme",
-        adresse: "Laon (02000)",
-        desc: "Lieu de renseignements",
-        roles: ["MA"],
-        lat: 49.56418
-        lng: 3.62407
+        roles: ["ANIM", "MCV"],
+        lat: 49.5572,
+        lng: 3.6050,
         icon: greenIcon
     }
 ];
@@ -236,7 +233,7 @@ lieux.forEach(function(lieu) {
 // --- Filtrage ---
 function applyFilters() {
     var actifs = [];
-    ["MRC", "VAL", "MA", "ANIM"].forEach(function(role) {
+    ["MRC", "VAL", "MA", "ANIM", "MCV"].forEach(function(role) {
         if (document.getElementById("f-" + role).checked) actifs.push(role);
     });
 
@@ -255,7 +252,7 @@ function applyFilters() {
     });
 }
 
-["MRC", "VAL", "MA", "ANIM"].forEach(function(role) {
+["MRC", "VAL", "MA", "ANIM", "MCV"].forEach(function(role) {
     document.getElementById("f-" + role).addEventListener("change", applyFilters);
 });
 </script>
