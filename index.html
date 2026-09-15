@@ -88,7 +88,6 @@ body { font-family: Arial; margin: 0; }
 
 <div id="filterBox">
     <h4>Filtres</h4>
-    <!-- Généré dynamiquement par JS -->
 </div>
 
 <div id="coordModal">
@@ -106,24 +105,20 @@ body { font-family: Arial; margin: 0; }
 // CONFIGURATION
 // =============================================
 
-// Correspondance rôle → couleur de marqueur
 var ROLE_COLORS = {
     ANIM: "green",
     MRC:  "green",
     VAL:  "blue",
     MA:   "red"
-    // MCV : pas de couleur définie, à compléter si besoin
 };
 
-// Liste des filtres affichés dans le panneau
 var FILTRES = ["MRC", "VAL", "MA", "ANIM"];
 
-// Limites géographiques (département de l'Aisne)
 var LIMITES_AISNE = L.latLngBounds([49.1, 2.9], [50.2, 4.3]);
 
 
 // =============================================
-// ICÔNES  — une seule fonction, zéro répétition
+// ICÔNES
 // =============================================
 
 var ICON_BASE = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-";
@@ -148,8 +143,16 @@ var redIcon   = makeIcon("red");
 // =============================================
 // DONNÉES DES LIEUX
 // =============================================
+// 📌 COULEURS DISPONIBLES : greenIcon | blueIcon | redIcon
+// 📌 RÔLES DISPONIBLES    : "MRC" | "VAL" | "MA" | "ANIM"
+// 📌 DOUBLE-CLIC sur la carte pour obtenir les coordonnées
 
 var lieux = [
+
+    // -----------------------------------------------------------------------
+    // LIEUX EXISTANTS
+    // -----------------------------------------------------------------------
+
     {
         nom:     "Lycée Julie-Daubié",
         adresse: "02000 Laon",
@@ -207,14 +210,73 @@ var lieux = [
         icon: greenIcon
     },
     {
-        nom:    "Orpi Laon",
+        nom:     "Orpi Laon",
         adresse: "10 Rue Eugène Leduc, 02000 Laon",
-        desc:    "Agence immobillière",
-        roles:    ["VAL", "MRC"],
+        desc:    "Agence immobilière.",
+        roles:   ["VAL", "MRC"],
         lat: 49.56796, lng: 3.63104,
         icon: blueIcon
-    }
+    },
 
+    // -----------------------------------------------------------------------
+    // ✏️  EMPLACEMENT 1 — À remplir
+    // -----------------------------------------------------------------------
+    {
+        nom:     "",          // Nom du lieu
+        adresse: "",          // Adresse complète
+        desc:    "",          // Courte description
+        roles:   [],          // Ex : ["VAL", "MRC"]
+        lat: 0, lng: 0,       // Coordonnées (double-clic sur la carte)
+        icon: greenIcon       // greenIcon | blueIcon | redIcon
+    },
+
+    // -----------------------------------------------------------------------
+    // ✏️  EMPLACEMENT 2 — À remplir
+    // -----------------------------------------------------------------------
+    {
+        nom:     "",
+        adresse: "",
+        desc:    "",
+        roles:   [],
+        lat: 0, lng: 0,
+        icon: greenIcon
+    },
+
+    // -----------------------------------------------------------------------
+    // ✏️  EMPLACEMENT 3 — À remplir
+    // -----------------------------------------------------------------------
+    {
+        nom:     "",
+        adresse: "",
+        desc:    "",
+        roles:   [],
+        lat: 0, lng: 0,
+        icon: greenIcon
+    },
+
+    // -----------------------------------------------------------------------
+    // ✏️  EMPLACEMENT 4 — À remplir
+    // -----------------------------------------------------------------------
+    {
+        nom:     "",
+        adresse: "",
+        desc:    "",
+        roles:   [],
+        lat: 0, lng: 0,
+        icon: greenIcon
+    },
+
+    // -----------------------------------------------------------------------
+    // ✏️  EMPLACEMENT 5 — À remplir
+    // -----------------------------------------------------------------------
+    {
+        nom:     "",
+        adresse: "",
+        desc:    "",
+        roles:   [],
+        lat: 0, lng: 0,
+        icon: greenIcon
+    }
 
 ];
 
@@ -235,7 +297,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// Double clic → affiche les coordonnées
 map.on('dblclick', function(e) {
     L.DomEvent.stopPropagation(e);
     L.DomEvent.preventDefault(e);
@@ -249,26 +310,27 @@ map.on('dblclick', function(e) {
 // MARQUEURS
 // =============================================
 
-var markers = lieux.map(function(lieu) {
-    var popup =
-        "<b>" + lieu.nom + "</b><br>" +
-        lieu.adresse +
-        (lieu.desc          ? "<br>" + lieu.desc : "") +
-        (lieu.roles.length  ? "<br><small>" + lieu.roles.join(", ") + "</small>" : "");
+var markers = lieux
+    .filter(function(lieu) { return lieu.lat !== 0 && lieu.lng !== 0; }) // ignore les emplacements vides
+    .map(function(lieu) {
+        var popup =
+            "<b>" + lieu.nom + "</b><br>" +
+            lieu.adresse +
+            (lieu.desc         ? "<br>" + lieu.desc : "") +
+            (lieu.roles.length ? "<br><small>" + lieu.roles.join(", ") + "</small>" : "");
 
-    var m = L.marker([lieu.lat, lieu.lng], { icon: lieu.icon })
-        .addTo(map)
-        .bindPopup(popup);
+        var m = L.marker([lieu.lat, lieu.lng], { icon: lieu.icon })
+            .addTo(map)
+            .bindPopup(popup);
 
-    return { marker: m, lieu: lieu };
-});
+        return { marker: m, lieu: lieu };
+    });
 
 
 // =============================================
 // FILTRES
 // =============================================
 
-// Génération dynamique des cases à cocher
 var filterBox = document.getElementById('filterBox');
 filterBox.innerHTML = '<h4>Filtres</h4>';
 
@@ -281,7 +343,6 @@ FILTRES.forEach(function(role) {
     filterBox.appendChild(row);
 });
 
-// Application des filtres
 function applyFilters() {
     var actifs = FILTRES.filter(function(role) {
         return document.getElementById("f-" + role).checked;
@@ -289,19 +350,12 @@ function applyFilters() {
 
     markers.forEach(function(obj) {
         var roles = obj.lieu.roles;
-
-        // Marqueur sans rôle = toujours visible
-        if (roles.length === 0) {
-            obj.marker.addTo(map);
-            return;
-        }
-
+        if (roles.length === 0) { obj.marker.addTo(map); return; }
         var visible = roles.some(function(r) { return actifs.includes(r); });
         visible ? obj.marker.addTo(map) : map.removeLayer(obj.marker);
     });
 }
 
-// Écoute des changements sur chaque filtre
 FILTRES.forEach(function(role) {
     document.getElementById("f-" + role).addEventListener("change", applyFilters);
 });
