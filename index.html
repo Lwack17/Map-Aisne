@@ -4,90 +4,133 @@
 <meta charset="utf-8">
 <title>Carte Aisne</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <style>
-body { font-family: Arial; margin: 0; }
-#map { height: 100vh; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; }
+#map { height: 100vh; width: 100vw; }
 
+/* Panneau de filtres */
 #filterBox {
-    position: absolute;
-    top: 10px; right: 10px;
-    background: white;
-    padding: 12px 16px;
-    border-radius: 8px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.3);
-    font-size: 14px;
-    z-index: 1000;
-    min-width: 140px;
+    position: absolute; top: 10px; right: 10px;
+    background: white; padding: 12px 16px; border-radius: 8px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.3); font-size: 14px;
+    z-index: 1000; min-width: 140px;
 }
 #filterBox h4 {
-    margin: 0 0 10px 0;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #444;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 6px;
+    margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 6px;
 }
-.filter-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 7px;
-    cursor: pointer;
-}
-.filter-row input[type="checkbox"] {
-    accent-color: #3a7bd5;
-    width: 15px; height: 15px;
-    cursor: pointer;
-}
-.filter-row label {
-    cursor: pointer;
-    font-size: 13px;
-    color: #333;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-}
+.filter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; cursor: pointer; }
+.filter-row input[type="checkbox"] { accent-color: #3a7bd5; width: 15px; height: 15px; cursor: pointer; }
+.filter-row label { cursor: pointer; font-size: 13px; color: #333; font-weight: 600; letter-spacing: 0.03em; }
 
-#coordModal {
+/* Panneau latéral */
+#sidePanel {
     display: none;
-    position: fixed;
-    top: 50%; left: 50%;
+    position: absolute; top: 0; left: 0;
+    width: 320px; height: 100vh;
+    background: white; z-index: 1001;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.2);
+    flex-direction: column;
+}
+#sidePanelHeader {
+    padding: 14px 16px; border-bottom: 1px solid #eee;
+    display: flex; align-items: center; justify-content: space-between;
+    background: #f8f8f8;
+}
+#sidePanelHeader h3 { font-size: 14px; color: #333; text-transform: uppercase; letter-spacing: 0.05em; }
+#closePanel {
+    cursor: pointer; font-size: 20px; color: #888; line-height: 1;
+    background: none; border: none; padding: 0 4px;
+}
+#closePanel:hover { color: #333; }
+#sidePanelSearch {
+    padding: 10px 12px; border-bottom: 1px solid #eee;
+}
+#sidePanelSearch input {
+    width: 100%; padding: 7px 10px; border: 1px solid #ddd;
+    border-radius: 6px; font-size: 13px; outline: none;
+}
+#sidePanelSearch input:focus { border-color: #3a7bd5; }
+#lieuList { overflow-y: auto; flex: 1; }
+.lieu-item {
+    padding: 11px 14px; border-bottom: 1px solid #f0f0f0;
+    cursor: pointer; transition: background 0.15s;
+}
+.lieu-item:hover { background: #f5f8ff; }
+.lieu-item .lieu-nom { font-size: 13px; font-weight: 700; color: #222; margin-bottom: 3px; }
+.lieu-item .lieu-adresse { font-size: 12px; color: #777; margin-bottom: 3px; }
+.lieu-item .lieu-desc { font-size: 12px; color: #555; }
+.lieu-item .lieu-roles { margin-top: 5px; display: flex; gap: 4px; flex-wrap: wrap; }
+.role-badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.badge-MRC  { background: #e8f5e9; color: #2e7d32; }
+.badge-ANIM { background: #e8f5e9; color: #2e7d32; }
+.badge-VAL  { background: #e3f2fd; color: #1565c0; }
+.badge-MA   { background: #ffebee; color: #c62828; }
+.badge-LOC  { background: #fff3e0; color: #e65100; }
+
+/* Bouton ouvrir panneau */
+#openPanelBtn {
+    position: absolute; top: 10px; left: 10px; z-index: 1000;
+    background: white; border: none; border-radius: 8px;
+    padding: 10px 14px; cursor: pointer; font-size: 13px; font-weight: 600;
+    box-shadow: 0 0 8px rgba(0,0,0,0.25); color: #333;
+    display: flex; align-items: center; gap: 6px;
+}
+#openPanelBtn:hover { background: #f0f4ff; }
+
+/* Modal coordonnées */
+#coordModal {
+    display: none; position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
-    padding: 16px 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 16px rgba(0,0,0,0.4);
-    z-index: 2000;
-    font-size: 14px;
-    min-width: 220px;
+    background: white; padding: 16px 20px; border-radius: 8px;
+    box-shadow: 0 0 16px rgba(0,0,0,0.4); z-index: 2000;
+    font-size: 14px; min-width: 220px;
 }
-#coordModal h4 {
-    margin: 0 0 10px 0;
-    font-size: 13px;
-    color: #444;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 6px;
-}
+#coordModal h4 { margin: 0 0 10px 0; font-size: 13px; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
 #coordModal p { margin: 4px 0; color: #222; }
 #coordModal button {
-    margin-top: 12px;
-    width: 100%;
-    padding: 6px;
-    background: #3a7bd5;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 13px;
+    margin-top: 12px; width: 100%; padding: 6px;
+    background: #3a7bd5; color: white; border: none;
+    border-radius: 5px; cursor: pointer; font-size: 13px;
 }
 #coordModal button:hover { background: #2f63b0; }
+
+/* Légende */
+#legend {
+    position: absolute; bottom: 30px; right: 10px; z-index: 1000;
+    background: white; padding: 10px 14px; border-radius: 8px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.25); font-size: 12px;
+}
+#legend h5 { font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 7px; letter-spacing: 0.05em; }
+.legend-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; color: #333; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 </style>
 </head>
 <body>
 
+<button id="openPanelBtn">☰ Liste des lieux</button>
+
 <div id="filterBox">
     <h4>Filtres</h4>
+</div>
+
+<div id="sidePanel">
+    <div id="sidePanelHeader">
+        <h3>📍 Lieux</h3>
+        <button id="closePanel">×</button>
+    </div>
+    <div id="sidePanelSearch">
+        <input type="text" id="searchInput" placeholder="Rechercher un lieu…" />
+    </div>
+    <div id="lieuList"></div>
 </div>
 
 <div id="coordModal">
@@ -97,25 +140,23 @@ body { font-family: Arial; margin: 0; }
     <button onclick="document.getElementById('coordModal').style.display='none'">Fermer</button>
 </div>
 
+<div id="legend">
+    <h5>Légende</h5>
+    <div class="legend-row"><div class="legend-dot" style="background:#4CAF50"></div> ANIM / MRC</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#2196F3"></div> VAL</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#f44336"></div> MA</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#FF9800"></div> LOC</div>
+</div>
+
 <div id="map"></div>
 
 <script>
-
 // =============================================
 // CONFIGURATION
 // =============================================
 
-var ROLE_COLORS = {
-    ANIM: "green",
-    MRC:  "green",
-    VAL:  "blue",
-    MA:   "red"
-};
-
-var FILTRES = ["MRC", "VAL", "MA", "ANIM"];
-
+var FILTRES = ["MRC", "VAL", "MA", "ANIM", "LOC"];
 var LIMITES_AISNE = L.latLngBounds([49.1, 2.9], [50.2, 4.3]);
-
 
 // =============================================
 // ICÔNES
@@ -126,25 +167,23 @@ var SHADOW_URL = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"
 
 function makeIcon(color) {
     return new L.Icon({
-        iconUrl:      ICON_BASE + color + ".png",
-        shadowUrl:    SHADOW_URL,
-        iconSize:     [25, 41],
-        iconAnchor:   [12, 41],
-        popupAnchor:  [1, -34],
-        shadowSize:   [41, 41]
+        iconUrl: ICON_BASE + color + ".png",
+        shadowUrl: SHADOW_URL,
+        iconSize: [25,41], iconAnchor: [12,41],
+        popupAnchor: [1,-34], shadowSize: [41,41]
     });
 }
 
-var greenIcon = makeIcon("green");
-var blueIcon  = makeIcon("blue");
-var redIcon   = makeIcon("red");
-
+var greenIcon  = makeIcon("green");
+var blueIcon   = makeIcon("blue");
+var redIcon    = makeIcon("red");
+var orangeIcon = makeIcon("orange");
 
 // =============================================
 // DONNÉES DES LIEUX
 // =============================================
-// 📌 COULEURS DISPONIBLES : greenIcon | blueIcon | redIcon
-// 📌 RÔLES DISPONIBLES    : "MRC" | "VAL" | "MA" | "ANIM"
+// 📌 COULEURS DISPONIBLES : greenIcon | blueIcon | redIcon | orangeIcon
+// 📌 RÔLES DISPONIBLES    : "MRC" | "VAL" | "MA" | "ANIM" | "LOC"
 // 📌 DOUBLE-CLIC sur la carte pour obtenir les coordonnées
 
 var lieux = [
@@ -218,25 +257,25 @@ var lieux = [
         icon: blueIcon
     },
     {
-        nom:     "E.Leclerc",        
-        adresse: "7 Rue George Sand Chambry",          
-        desc:    "Commerce agroalimentaire",         
-        roles:   ["ANIM", "MRC"],          
-        lat: 49.59275, lng: 3.64563,       
-        icon: greenIcon      
+        nom:     "E.Leclerc",
+        adresse: "7 Rue George Sand, Chambry",
+        desc:    "Commerce agroalimentaire.",
+        roles:   ["ANIM", "MRC"],
+        lat: 49.59275, lng: 3.64563,
+        icon: greenIcon
     },
     {
         nom:     "E.Leclerc Animalerie",
-        adresse: "7 Rue George Sand Chambry",
-        desc:    "Commerce animalier",
+        adresse: "7 Rue George Sand, Chambry",
+        desc:    "Commerce animalier.",
         roles:   ["ANIM", "MRC"],
         lat: 49.59082, lng: 3.64828,
         icon: greenIcon
     },
     {
-        nom:     "Centre aquatique,le dôme de Laon",
+        nom:     "Centre aquatique, le Dôme de Laon",
         adresse: "74 Avenue Charles de Gaulle, 02000 Laon",
-        desc:    "Piscine municipale",
+        desc:    "Piscine municipale.",
         roles:   ["MA", "MRC"],
         lat: 49.56717, lng: 3.65226,
         icon: redIcon
@@ -244,32 +283,84 @@ var lieux = [
     {
         nom:     "Intersport",
         adresse: "Laon (02000)",
-        desc:    "Magasin de vêtement et d'equipements de sport",
+        desc:    "Magasin de vêtements et d'équipements de sport.",
         roles:   ["MRC", "ANIM"],
         lat: 49.54895, lng: 3.61136,
         icon: greenIcon
     },
     {
         nom:     "123webimmo-Chambry",
-        adresse: "Rue Jean Jaures 02000 Chambry",
-        desc:    "Agence immobillière",
-        roles:   ["VAL","MRC"],
+        adresse: "Rue Jean Jaurès, 02000 Chambry",
+        desc:    "Agence immobilière.",
+        roles:   ["VAL", "MRC"],
         lat: 49.58704, lng: 3.65085,
         icon: blueIcon
+    },
+
+    // -----------------------------------------------------------------------
+    // EMPLACEMENTS DE LOCATION
+    // -----------------------------------------------------------------------
+
+    {
+        nom:     "Europcar Laon",
+        adresse: "Gare de Laon, 02000 Laon",
+        desc:    "Location de véhicules.",
+        roles:   ["LOC", "MRC"],
+        lat: 49.56643, lng: 3.62081,
+        icon: orangeIcon
+    },
+    {
+        nom:     "Hertz Laon",
+        adresse: "02000 Laon",
+        desc:    "Location de véhicules.",
+        roles:   ["LOC", "MRC"],
+        lat: 49.56520, lng: 3.62210,
+        icon: orangeIcon
+    },
+    {
+        nom:     "Kiloutou Laon",
+        adresse: "Rue de Soissons, 02000 Laon",
+        desc:    "Location de matériel et d'outillage.",
+        roles:   ["LOC", "MRC"],
+        lat: 49.55380, lng: 3.62750,
+        icon: orangeIcon
+    },
+    {
+        nom:     "Loxam Laon",
+        adresse: "02000 Laon",
+        desc:    "Location d'engins et matériaux de chantier.",
+        roles:   ["LOC", "MRC"],
+        lat: 49.55100, lng: 3.62400,
+        icon: orangeIcon
+    },
+    {
+        nom:     "Airbnb - Centre Laon",
+        adresse: "Laon (02000)",
+        desc:    "Location meublée courte durée.",
+        roles:   ["LOC", "MA", "MRC"],
+        lat: 49.56300, lng: 3.62550,
+        icon: orangeIcon
+    },
+    {
+        nom:     "Gîte de la Cathédrale",
+        adresse: "Laon (02000)",
+        desc:    "Location gîte / hébergement touristique.",
+        roles:   ["LOC", "MA", "MRC"],
+        lat: 49.56530, lng: 3.62900,
+        icon: orangeIcon
     }
 
 ];
-
 
 // =============================================
 // CARTE
 // =============================================
 
 var map = L.map('map', {
-    maxBounds:           LIMITES_AISNE,
-    maxBoundsViscosity:  1.0,
-    doubleClickZoom:     false
-}).setView([49.5, 3.5], 9);
+    maxBounds: LIMITES_AISNE,
+    maxBoundsViscosity: 1.0,
+    doubleClickZoom: false
+}).setView([49.56, 3.63], 13);
 
 map.setMinZoom(8);
 
@@ -285,27 +376,30 @@ map.on('dblclick', function(e) {
     document.getElementById('coordModal').style.display = 'block';
 });
 
+// =============================================
+// CLUSTER + MARQUEURS
+// =============================================
 
-// =============================================
-// MARQUEURS
-// =============================================
+var clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 });
 
 var markers = lieux
-    .filter(function(lieu) { return lieu.lat !== 0 && lieu.lng !== 0; }) // ignore les emplacements vides
+    .filter(function(lieu) { return lieu.lat !== 0 && lieu.lng !== 0; })
     .map(function(lieu) {
+        var rolesHtml = lieu.roles.length
+            ? lieu.roles.map(function(r) { return '<span class="role-badge badge-' + r + '">' + r + '</span>'; }).join(' ')
+            : '';
         var popup =
             "<b>" + lieu.nom + "</b><br>" +
-            lieu.adresse +
-            (lieu.desc         ? "<br>" + lieu.desc : "") +
-            (lieu.roles.length ? "<br><small>" + lieu.roles.join(", ") + "</small>" : "");
+            "<span style='color:#777;font-size:12px'>" + lieu.adresse + "</span>" +
+            (lieu.desc ? "<br>" + lieu.desc : "") +
+            (rolesHtml ? "<br><div style='margin-top:5px'>" + rolesHtml + "</div>" : "");
 
-        var m = L.marker([lieu.lat, lieu.lng], { icon: lieu.icon })
-            .addTo(map)
-            .bindPopup(popup);
-
+        var m = L.marker([lieu.lat, lieu.lng], { icon: lieu.icon }).bindPopup(popup);
+        clusterGroup.addLayer(m);
         return { marker: m, lieu: lieu };
     });
 
+map.addLayer(clusterGroup);
 
 // =============================================
 // FILTRES
@@ -327,12 +421,12 @@ function applyFilters() {
     var actifs = FILTRES.filter(function(role) {
         return document.getElementById("f-" + role).checked;
     });
-
+    clusterGroup.clearLayers();
     markers.forEach(function(obj) {
         var roles = obj.lieu.roles;
-        if (roles.length === 0) { obj.marker.addTo(map); return; }
-        var visible = roles.some(function(r) { return actifs.includes(r); });
-        visible ? obj.marker.addTo(map) : map.removeLayer(obj.marker);
+        if (roles.length === 0 || roles.some(function(r) { return actifs.includes(r); })) {
+            clusterGroup.addLayer(obj.marker);
+        }
     });
 }
 
@@ -340,6 +434,64 @@ FILTRES.forEach(function(role) {
     document.getElementById("f-" + role).addEventListener("change", applyFilters);
 });
 
+// =============================================
+// PANNEAU LATÉRAL
+// =============================================
+
+var sidePanel   = document.getElementById('sidePanel');
+var lieuList    = document.getElementById('lieuList');
+var searchInput = document.getElementById('searchInput');
+
+function renderList(filter) {
+    lieuList.innerHTML = '';
+    var filtered = markers.filter(function(obj) {
+        if (!filter) return true;
+        var q = filter.toLowerCase();
+        return obj.lieu.nom.toLowerCase().includes(q) ||
+               obj.lieu.adresse.toLowerCase().includes(q) ||
+               obj.lieu.desc.toLowerCase().includes(q);
+    });
+
+    if (filtered.length === 0) {
+        lieuList.innerHTML = '<p style="padding:16px;color:#999;font-size:13px">Aucun résultat</p>';
+        return;
+    }
+
+    filtered.forEach(function(obj) {
+        var lieu = obj.lieu;
+        var div = document.createElement('div');
+        div.className = 'lieu-item';
+        var rolesHtml = lieu.roles.map(function(r) {
+            return '<span class="role-badge badge-' + r + '">' + r + '</span>';
+        }).join('');
+        div.innerHTML =
+            '<div class="lieu-nom">' + lieu.nom + '</div>' +
+            '<div class="lieu-adresse">' + lieu.adresse + '</div>' +
+            (lieu.desc ? '<div class="lieu-desc">' + lieu.desc + '</div>' : '') +
+            (rolesHtml ? '<div class="lieu-roles">' + rolesHtml + '</div>' : '');
+        div.addEventListener('click', function() {
+            map.setView([lieu.lat, lieu.lng], 16);
+            obj.marker.openPopup();
+            sidePanel.style.display = 'none';
+        });
+        lieuList.appendChild(div);
+    });
+}
+
+document.getElementById('openPanelBtn').addEventListener('click', function() {
+    sidePanel.style.display = 'flex';
+    searchInput.value = '';
+    renderList('');
+    searchInput.focus();
+});
+
+document.getElementById('closePanel').addEventListener('click', function() {
+    sidePanel.style.display = 'none';
+});
+
+searchInput.addEventListener('input', function() {
+    renderList(this.value);
+});
 </script>
 </body>
 </html>
